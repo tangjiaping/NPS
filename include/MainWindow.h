@@ -7,11 +7,24 @@
 
 
 #include <QMainWindow>
+#include "DataPkg.h"
+
+class Sniffer;
 
 class MainWindow : public QMainWindow{
 Q_OBJECT
 public:
     MainWindow();
+    DataPkg* dataPkg;
+    Sniffer* sniffer;
+
+    signals:
+        void loadPacket();
+
+private:
+    void InitData();
+
+
 
 };
 

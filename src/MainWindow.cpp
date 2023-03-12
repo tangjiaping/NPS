@@ -10,11 +10,21 @@
 #include <QLineEdit>
 #include <iostream>
 #include <QDebug>
-
+#include "../include/Sniffer.h"
 #include "../include/MainWindow.h"
 #include "../include/MainWidget.h"
 
+void MainWindow::InitData() {
+    dataPkg = new DataPkg;
+    sniffer = new Sniffer();
+    sniffer->initDataPkg(dataPkg);
+    sniffer->serachDevice();
+    sniffer->window = this;
+}
+
 MainWindow::MainWindow() {
+
+    InitData();
 
     QString start_active_icon = "/home/tjp/CLionProjects/NPS/icon/start_active.png";
     QString start_no_active_icon = "/home/tjp/CLionProjects/NPS/icon/start_no_active.png";
@@ -36,22 +46,30 @@ MainWindow::MainWindow() {
         qDebug() << "click start button";
         start_btn->setIcon(QIcon(start_no_active_icon));
         stop_btn->setIcon(QIcon(stop_active_icon));
+        sniffer->startCapture();
     });
     connect(stop_btn,&QAction::triggered,this,[=](){
         qDebug( "click stop button");
         start_btn->setIcon(QIcon(start_active_icon));
         stop_btn->setIcon(QIcon(stop_no_active_icon));
+        sniffer->closeCaptrue();
+
     });
 
 
     auto network_card = new QComboBox();
-    network_card->addItem("enp2s0");
-    network_card->addItem("lo");
-    network_card->addItem("wlp3s0");
+    for(auto dev : dataPkg->network_cards){
+        std::string dev_str = dev->name;
+        network_card->addItem(QString::fromStdString(dev_str));
+    }
     network_card->setFixedWidth(200);
     network_card->setFixedHeight(30);
     network_card->setStyleSheet("QComboBox{combobox-popup:0;}");
     toolBar->addWidget(network_card);
+    connect(network_card,(void (QComboBox::*)(int))&QComboBox::currentIndex,this,[&](int index){
+        qDebug() << "new_index: " << network_card->currentIndex();
+
+    });
 
     auto filter_line = new QLineEdit();
     filter_line->setPlaceholderText("please write filter regular");
@@ -62,9 +80,10 @@ MainWindow::MainWindow() {
     addToolBar(Qt::TopToolBarArea,toolBar);
 
 
-    auto mainWidget = new MainWidget();
+    auto mainWidget = new MainWidget(dataPkg);
     setCentralWidget(mainWidget);
 
 
+    connect(this, &MainWindow::loadPacket,mainWidget,&MainWidget::displayPacket);
     resize(800,400);
 }
