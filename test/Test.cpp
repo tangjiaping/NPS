@@ -392,4 +392,6 @@ TEST(test,test){
     std::cout << (c1 << 8) + c2 << std::endl;
     std::cout << (80 << 8) + 16 << std::endl;
     std::cout << ((unsigned int)c1 << 8) + (unsigned  int)c2 << std::endl;
+
+    std::cout << 0x6dc539a6;
 }

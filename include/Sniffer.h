@@ -27,6 +27,7 @@ public:
 
     pcap_if* current_deivce = nullptr;
     pcap_t* current_handler = nullptr;
+    struct bpf_program filter;
 
 
 private:
@@ -43,11 +44,13 @@ public:
 
     void changeDevice(int index);
 
-    void startCapture();
+    bool startCapture(const std::string& expr);
 
     void loopCapture();
 
     void closeCaptrue();
+
+    bool setFilter(const std::string& expr);
 };
 
 

@@ -10,7 +10,7 @@
 #include "DataPkg.h"
 
 class MainWidget;
-
+class QLineEdit;
 class Sniffer;
 
 class MainWindow : public QMainWindow{
@@ -20,6 +20,7 @@ public:
     DataPkg* dataPkg;
     Sniffer* sniffer;
     MainWidget* mainWidget;
+    QLineEdit* filter_line;
     signals:
         void loadPacket();
 

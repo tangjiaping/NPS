@@ -4,7 +4,7 @@
 
 #include "../include/Analysiser.h"
 
-EthernetStr Analysiser::parserMacAddress(Ethernet *ethernet_header) {
+EthernetStr Analysiser::parserEthernet(Ethernet *ethernet_header) {
     EthernetStr ethernetStr;
     std::stringstream ss;
     ss.str("");
@@ -31,8 +31,12 @@ EthernetStr Analysiser::parserMacAddress(Ethernet *ethernet_header) {
         ethernetStr.type = "IP";
     }else if (ethernet_header->type[0] == 0x08 && ethernet_header->type[1] == 0x06){
         ethernetStr.type = "ARP";
+    }else if (ethernet_header->type[0] == 0x08 && ethernet_header->type[1] == 0x35){
+        ethernetStr.type = "RARP";
+    }else if (ethernet_header->type[0] == 0x86 && ethernet_header->type[1] == 0xdd){
+        ethernetStr.type = "IPv6";
     }else{
-        ethernetStr.type = "UNKNOW";
+        ethernetStr.type = "UN";
         std::cout << "Unknown Type" << std::endl;
     }
     return ethernetStr;
@@ -73,13 +77,13 @@ IPStr Analysiser::parserIp(IP *ip_header) {
 
     ipStr.ttl = ip_header->ttl;
 
-    if (ip_header->protocol == 1){
+    if (ip_header->protocol == IPPROTO_ICMP){
         ipStr.protocol = "ICMP";
-    } else if (ip_header->protocol == 2){
+    } else if (ip_header->protocol == IPPROTO_IGMP){
         ipStr.protocol = "IGMP";
-    } else if (ip_header->protocol == 6){
+    } else if (ip_header->protocol == IPPROTO_TCP){
         ipStr.protocol = "TCP";
-    } else if (ip_header->protocol == 17){
+    } else if (ip_header->protocol == IPPROTO_UDP){
         ipStr.protocol = "UDP";
     }else{
         ipStr.protocol = "UNKNOW";
@@ -110,12 +114,21 @@ ARPStr Analysiser::parserARP(ARP *arp_header) {
     ARPStr arpStr;
     std::stringstream ss;
 
-    arpStr.hard_address_type = arp_header->hardwareAddrType;
-    arpStr.protocol_type = arp_header->hardwareAddrType;
-    arpStr.hard_address_len = arp_header->hardwareAddrLength;
-    arpStr.protocol_address_len = arp_header->protocolAddrLength;
+    unsigned int number = arp_header->hardwareAddrType[0];
+    number = (number << 8) + arp_header->hardwareAddrType[1];
+    arpStr.hard_address_type = number;
 
-    switch (arp_header->opCode) {
+    number = arp_header->protocolType[0];
+    number = (number << 8) + arp_header->protocolType[1];
+    arpStr.protocol_address_len = number;
+
+    arpStr.protocol_address_len = arp_header->protocolAddrLength;
+    arpStr.hard_address_len = arp_header->hardwareAddrLength;
+
+    number = arp_header->opCode[0];
+    number = (number << 8) + arp_header->opCode[1];
+
+    switch (number) {
         case 1:
             arpStr.op_code = "ARP Request";
             arpStr.protocol = "ARP";
@@ -219,31 +232,15 @@ IPv6Str Analysiser::parserIpv6(IPv6 *iPv6) {
     return iPv6Str;
 }
 
-unsigned int Analysiser::hexToInt(u_char uChar) {
-    if (uChar >= '0' && uChar <= '9'){
-        return uChar  - '0';
-    }
-    if (uChar >= 'A' && uChar <= 'F'){
-        return uChar  - 'A' + 10;
-    }
-    if (uChar >= 'a' && uChar <= 'f'){
-        return uChar  - 'a' + 10;
-    }
-    return 0;
-}
-
 TCPStr Analysiser::parserTCP(TCP *tcp) {
     TCPStr tcpStr;
     std::stringstream ss;
 
-//    tcp->srcPort[0] = 0x1;
-//    tcp->srcPort[1] = 0xbb;
+
     unsigned int number = (tcp->srcPort[0]);
     number = (number << 8) + (tcp->srcPort[1]);
     tcpStr.srcPort = number;
 
-//    tcp->desPort[0] = 0xbc;
-//    tcp->desPort[1] = 0xf6;
     number = tcp->desPort[0];
     number = (number << 8) + tcp->desPort[1];
     tcpStr.desPort = number;
@@ -307,3 +304,123 @@ UDPStr Analysiser::parserUDP(UDP *udp) {
     udpStr.check_sum = ss.str();
     return udpStr;
 }
+
+ICMPStr Analysiser::parserICMP(ICMP *icmp) {
+    ICMPStr icmpStr;
+
+    icmpStr.type = icmp->type;
+    icmpStr.code = icmp->code;
+    std::stringstream ss;
+    ss << "0x" << HEX(icmp->check_sum[0]) << HEX(icmp->check_sum[1]);
+    icmpStr.check_sum = ss.str();
+    return icmpStr;
+}
+
+
+std::string Analysiser::icmpMessage(uint8_t type, uint8_t code) {
+    if (type == 0 && code == 0){
+        return "ping respond";
+    }
+    if (type == 3 && code == 0){
+        return "des network not reachable";
+    }
+    if (type == 3 && code == 1){
+        return "des host not reachable";
+    }
+    if (type == 3 && code == 2){
+        return "des protocol not reachable";
+    }
+    if (type == 3 && code == 3){
+        return "des port not reachable";
+    }
+    if (type == 3 && code == 6){
+        return "des network unknow";
+    }
+    if (type == 8 && code == 0){
+        return "ping request";
+    }
+
+    return "no parser!!!";
+
+}
+
+//EthernetStr Analysiser::parserEther_header(ether_header *etherHeader) {
+//    EthernetStr ethernetStr;
+//    std::stringstream ss;
+//
+//    for(int i=0;i<ETH_ALEN-1;i++){
+//        ss  << HEX(etherHeader->ether_shost[i]) << ":";
+//    }
+//    ss << HEX(etherHeader->ether_shost[ETH_ALEN-1]);
+//    ethernetStr.srcMac = ss.str();
+//
+//    ss.str("");
+//    for(int i=0;i<ETH_ALEN-1;i++){
+//        ss  << HEX(etherHeader->ether_dhost[i]) << ":";
+//    }
+//    ss << HEX(etherHeader->ether_dhost[ETH_ALEN-1]);
+//    ethernetStr.desMac = ss.str();
+//
+//    switch (etherHeader->ether_type) {
+//        case ETHERTYPE_IP:
+//            ethernetStr.type = "IP";
+//            break;
+//        case ETHERTYPE_ARP:
+//            ethernetStr.type = "ARP";
+//            break;
+//        case ETHERTYPE_REVARP:
+//            ethernetStr.type = "RARP";
+//            break;
+//        case ETHERTYPE_IPV6:
+//            ethernetStr.type = "IPv6";
+//            break;
+//        default:
+//            break;
+//    }
+//
+//    return ethernetStr;
+//}
+//
+//IPStr Analysiser::parserIpv4(ip *ip) {
+//    IPStr ipStr;
+//
+//    ipStr.version = ip->ip_v;
+//    ipStr.header_len = ip->ip_hl;
+//
+//    ipStr.tos = toHex(ip->ip_tos);
+//    ipStr.total_len = ip->ip_len;
+//    ipStr.identify = toHex(ip->ip_id);
+//
+//    if (ip->ip_off & IP_RF){
+//        ipStr.flag = "RF";
+//    }else if (ip->ip_off & IP_DF){
+//        ipStr.flag = "DF";
+//    }else if (ip->ip_off & IP_MF){
+//        ipStr.flag = "MF";
+//    }
+//    ipStr.offset = ip->ip_off & IP_OFFMASK;
+//
+//    ipStr.ttl = ip->ip_ttl;
+//
+//    if (ip->ip_p == IPPROTO_TCP){
+//        ipStr.protocol = "TCP";
+//    }else if (ip->ip_p == IPPROTO_UDP){
+//        ipStr.protocol = "UDP";
+//    }else if (ip->ip_p == IPPROTO_ICMP){
+//        ipStr.protocol = "ICMP";
+//    }else if (ip->ip_p == IPPROTO_IGMP){
+//        ipStr.protocol = "IGMP";
+//    }else if (ip->ip_p == IPPROTO_IPV6){
+//        ipStr.protocol = "IPv6";
+//    }else{
+//        ipStr.protocol = "UN";
+//    }
+//
+//    ipStr.check_sum = toHex(ip->ip_sum);
+//
+//    ipStr.srcIp = inet_ntoa(ip->ip_src);
+//    ipStr.desIp = inet_ntoa(ip->ip_dst);
+//
+//
+//    return ipStr;
+//}

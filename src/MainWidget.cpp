@@ -11,7 +11,7 @@
 
 
 void MainWidget::displayPacket() {
-    std::cout << "display packet\n";
+//    std::cout << "display packet\n";
 
 
         Packet packet = dataPkg->getPacket(idx++);
@@ -20,7 +20,7 @@ void MainWidget::displayPacket() {
         }
         Ethernet* ethernet_header = nullptr;
         ethernet_header = (Ethernet*) packet.data;
-        EthernetStr ethernetStr = Analysiser::parserMacAddress(ethernet_header);
+        EthernetStr ethernetStr = Analysiser::parserEthernet(ethernet_header);
 
         std::stringstream ss;
 
@@ -34,28 +34,29 @@ void MainWidget::displayPacket() {
         items[3] = ethernetStr.desMac;
         items[7] = std::to_string(packet.len);
 
-        if (ethernet_header->type[0] == 0x08 && ethernet_header->type[1] == 0x00){         /// for Ipv4
-            IP* ip_header = (IP*)((packet.data + sizeof(Ethernet)));
+        if (ethernetStr.type == "IP"){         /// for Ipv4
+            IP* ip_header = (IP*)((packet.data + sizeof(ether_header)));
             IPStr ipStr = Analysiser::parserIp(ip_header);
+
             items[4] = ipStr.srcIp;
             items[5] = ipStr.desIp;
             items[6] = ipStr.protocol;
 
-        }else if (ethernet_header->type[0] == 0x08 && ethernet_header->type[1] == 0x06){    /// for ARP
-            ARP* arp_header = (ARP*)(packet.data + sizeof(Ethernet));
+        }else if (ethernetStr.type == "ARP"){    /// for ARP
+            ARP* arp_header = (ARP*)(packet.data + sizeof(ether_header));
             ARPStr arpStr = Analysiser::parserARP(arp_header);
             items[4] = arpStr.srcIp;
             items[5] = arpStr.desIp;
             items[6] = arpStr.protocol;
-        }else if (ethernet_header->type[0] == 0x86 && ethernet_header->type[1] == 0xdd){    /// for Ipv6
-            IPv6* iPv6_header = (IPv6*)(packet.data + sizeof(Ethernet));
+        }else if (ethernetStr.type == "IPv6"){    /// for Ipv6
+            IPv6* iPv6_header = (IPv6*)(packet.data + sizeof(ether_header));
             IPv6Str iPv6Str = Analysiser::parserIpv6(iPv6_header);
             items[4] = iPv6Str.srcIp;
             items[5] = iPv6Str.desIp;
             items[6] = iPv6Str.protocol;
         }else{
             ss.str("");
-            ss << HEX(ethernet_header->type[0]) << HEX(ethernet_header->type[1]);
+            ss << "0x" << HEX(ethernet_header->type[0]) << HEX(ethernet_header->type[1]);
             std::cout << "Unknown Type " << ss.str() << std::endl;
         }
 
@@ -71,13 +72,19 @@ void MainWidget::displayPacket() {
 void MainWidget::clearTable() {
     table->clearContents();
     table->setRowCount(0);
+    tree->clear();
+    idx = 0;
+    button->clear();
+    dataPkg->clear();
 }
 
 void MainWidget::update(int selected_row) {
     int packet_id = table->item(selected_row,0)->text().toInt();
     Packet packet = dataPkg->getPacket(selected_row);
     tree->clear();
-
+    if (packet.data == nullptr){
+        return;
+    }
     std::stringstream ss;
     for(int i=0; i<packet.len; i++){
         ss << HEX(packet.data[i]) << " ";
@@ -99,13 +106,16 @@ void MainWidget::update(int selected_row) {
             "Packet len: " + std::to_string(packet.len)
     ))));
 
-    Ethernet* ethernet_header = nullptr;
-    ethernet_header = (Ethernet*) packet.data;
-    EthernetStr ethernetStr = Analysiser::parserMacAddress(ethernet_header);
+//    Ethernet* ethernet_header = nullptr;
+//    ethernet_header = (Ethernet*) packet.data;
+//    EthernetStr ethernetStr = Analysiser::parserMacAddress(ethernet_header);
+
+    Ethernet* etherHeader = (Ethernet*)(packet.data);
+    EthernetStr ethernetStr = Analysiser::parserEthernet(etherHeader);
     showEthernet(ethernetStr);
 
 
-    if (ethernet_header->type[0] == 0x08 && ethernet_header->type[1] == 0x00){         /// for Ipv4
+    if (ethernetStr.type == "IP"){         /// for Ipv4
         IP* ip_header = (IP*)((packet.data + sizeof(Ethernet)));
         IPStr ipStr = Analysiser::parserIp(ip_header);
         showIpv4(ipStr);
@@ -113,20 +123,25 @@ void MainWidget::update(int selected_row) {
         if (ipStr.protocol == "TCP"){
             TCP* tcp = (TCP*)(packet.data + sizeof(Ethernet) + ipStr.header_len);
             TCPStr tcpStr = Analysiser::parserTCP(tcp);
+
             showTCP(tcpStr);
         }else if (ipStr.protocol == "UDP"){
             UDP* udp = (UDP*)(packet.data + sizeof(Ethernet) + ipStr.header_len);
             UDPStr udpStr = Analysiser::parserUDP(udp);
-            showUDP(udpStr);
-        }else{
-            assert(true);
-        }
 
-    }else if (ethernet_header->type[0] == 0x08 && ethernet_header->type[1] == 0x06){    /// for ARP
+            showUDP(udpStr);
+        }else if (ipStr.protocol == "ICMP") {
+            ICMP* icmp = (ICMP*)(packet.data + sizeof(Ethernet) + ipStr.header_len);
+            ICMPStr icmpStr = Analysiser::parserICMP(icmp);
+            showICMP(icmpStr);
+        }else{
+//                assert(false);
+        }
+    }else if (ethernetStr.type == "ARP"){    /// for ARP
         ARP* arp_header = (ARP*)(packet.data + sizeof(Ethernet));
         ARPStr arpStr = Analysiser::parserARP(arp_header);
-
-    }else if (ethernet_header->type[0] == 0x86 && ethernet_header->type[1] == 0xdd){    /// for Ipv6
+        showARP(arpStr);
+    }else if (ethernetStr.type == "IPv6"){    /// for Ipv6
         IPv6* iPv6_header = (IPv6*)(packet.data + sizeof(Ethernet));
         IPv6Str iPv6Str = Analysiser::parserIpv6(iPv6_header);
         showIpv6(iPv6Str);
@@ -236,4 +251,21 @@ void MainWidget::showUDP(const UDPStr &udpStr) {
     UDP->addChild(new QTreeWidgetItem(QStringList(QString::fromStdString("Destination Port: " + std::to_string(udpStr.desPort)))));
     UDP->addChild(new QTreeWidgetItem(QStringList(QString::fromStdString("Header len: " + std::to_string(udpStr.total_len)))));
     UDP->addChild(new QTreeWidgetItem(QStringList(QString::fromStdString("Check sum: " + udpStr.check_sum))));
+}
+
+void MainWidget::showICMP(const ICMPStr &icmpStr) {
+    QTreeWidgetItem* ICMP = new QTreeWidgetItem(tree,QStringList(QString::fromStdString("Internet Control Message Protocol")));
+    ICMP->addChild(new QTreeWidgetItem(QStringList(QString::fromStdString("Type: " + std::to_string(icmpStr.type)))));
+    ICMP->addChild(new QTreeWidgetItem(QStringList(QString::fromStdString("Code: " + std::to_string(icmpStr.code)))));
+    ICMP->addChild(new QTreeWidgetItem(QStringList(QString::fromStdString("Check sum: " + icmpStr.check_sum))));
+    ICMP->addChild(new QTreeWidgetItem(QStringList(QString::fromStdString("Message: " + Analysiser::icmpMessage(icmpStr.type,icmpStr.code)))));
+}
+
+void MainWidget::showARP(const ARPStr &arpStr) {
+    QTreeWidgetItem* arp = new QTreeWidgetItem(tree,QStringList(QString::fromStdString("Request Resolution Protocol")));
+    arp->addChild(new QTreeWidgetItem(QStringList(QString::fromStdString("Opcode: " + arpStr.op_code))));
+    arp->addChild(new QTreeWidgetItem(QStringList(QString::fromStdString("Sender MAC: " + arpStr.srcMac))));
+    arp->addChild(new QTreeWidgetItem(QStringList(QString::fromStdString("Sender IP: " + arpStr.srcIp))));
+    arp->addChild(new QTreeWidgetItem(QStringList(QString::fromStdString("Target MAC: " + arpStr.desMac))));
+    arp->addChild(new QTreeWidgetItem(QStringList(QString::fromStdString("Target IP: " + arpStr.desIp))));
 }

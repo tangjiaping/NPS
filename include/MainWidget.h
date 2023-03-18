@@ -41,6 +41,8 @@ private:
     void showIpv6(const IPv6Str& iPv6Str);
     void showTCP(const TCPStr& tcpStr);
     void showUDP(const UDPStr& udpStr);
+    void showICMP(const ICMPStr& icmpStr);
+    void showARP(const ARPStr& arpStr);
 public:
     void update(int selected_row);
     void clearTable();

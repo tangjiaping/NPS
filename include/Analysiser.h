@@ -7,6 +7,12 @@
 
 
 #include <string>
+#include <netinet/ether.h>
+#include <netinet/ip.h>
+#include <netinet/ether.h>
+#include <net/if.h>
+#include <net/if_arp.h>
+
 #include "Sniffer.h"
 
 struct EthernetStr{
@@ -75,6 +81,13 @@ struct UDPStr{
     std::string check_sum;
 };
 
+struct ICMPStr{
+    uint8_t type;
+    uint8_t code;
+    std::string check_sum;
+
+};
+
 struct ARPStr{
     unsigned int hard_address_type;
     unsigned int protocol_type;
@@ -90,7 +103,7 @@ struct ARPStr{
 
 class Analysiser {
 public:
-    static EthernetStr parserMacAddress(Ethernet* ethernet);
+    static EthernetStr parserEthernet(Ethernet* ethernet);
     static IPStr parserIp(IP* ip_header);
     static ARPStr parserARP(ARP* arp_header);
     static IPv6Str parserIpv6(IPv6* iPv6);
@@ -98,7 +111,25 @@ public:
     static TCPStr parserTCP(TCP* tcp);
     static UDPStr parserUDP(UDP* tcp);
 
-    static unsigned int hexToInt(u_char uChar);
+    static ICMPStr parserICMP(ICMP* icmp);
+
+    static std::string icmpMessage(uint8_t type,uint8_t code);
+
+
+
+    static EthernetStr parserEther_header(ether_header* etherHeader);
+    static IPStr parserIpv4(ip* ip);
+
+    static std::string toHex(uint8_t num){
+        std::stringstream ss;
+        ss << HEX(num);
+        return ss.str();
+    }
+
+
+
+
+
 };
 
 

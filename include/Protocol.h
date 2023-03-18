@@ -90,12 +90,20 @@ struct UDP{
     u_char total_len[2];
     u_char check_sum[2];
 };
+
+struct ICMP{
+    u_char type;
+    u_char code;
+    u_char check_sum[2];
+    u_char other[4];
+
+};
 struct ARP{
-    unsigned int hardwareAddrType:16;
-    unsigned int protocolType:16;
-    unsigned int hardwareAddrLength:8;
-    unsigned int protocolAddrLength:8;
-    unsigned int opCode:16;
+    u_char hardwareAddrType[2];
+    u_char protocolType[2];
+    u_char hardwareAddrLength;
+    u_char protocolAddrLength;
+    u_char opCode[2];
     u_char srcMac[4];
     u_char srcIp[4];
     u_char desMac[4];

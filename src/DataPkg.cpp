@@ -22,6 +22,17 @@ void DataPkg::addPacket(int id,const u_char *from, int len, timeval ts) {
     Packet packet(data,len,ts,"");
     packet.id = id;
     packets.push_back(packet);
-
     mtx.unlock();
+}
+
+void DataPkg::clear() {
+    mtx.lock();
+    for(int i=0;i<packets.size();i++){
+        delete packets[i].data;
+        packets[i].data = nullptr;
+    }
+    packets.clear();
+    mtx.unlock();
+
+
 }

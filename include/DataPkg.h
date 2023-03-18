@@ -37,13 +37,15 @@ public:
 
     std::mutex mtx;
 
+    void clear();
+
     void parserDevice(pcap_if* interface_list);
 
     void addPacket(int id,const u_char* data,int len,timeval ts);
 
     Packet getPacket(int idx){
         if (idx >= packets.size()){
-          return Packet(nullptr);
+          return {nullptr};
         }
         return packets[idx];
     }

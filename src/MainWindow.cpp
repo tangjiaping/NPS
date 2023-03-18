@@ -10,6 +10,7 @@
 #include <QLineEdit>
 #include <iostream>
 #include <QDebug>
+#include <QMessageBox>
 #include "../include/Sniffer.h"
 #include "../include/MainWindow.h"
 #include "../include/MainWidget.h"
@@ -44,12 +45,19 @@ MainWindow::MainWindow() {
 
     connect(start_btn,&QAction::triggered,this,[=](){
         qDebug() << "click start button";
+        mainWidget->clearTable();
+        if (!sniffer->startCapture(filter_line->text().toStdString())){
+            QMessageBox::critical(
+                    this,
+                    tr("Warning"),
+                    tr("network card error or filter expression syntax error"));
+            return ;
+        }
         start_btn->setIcon(QIcon(start_no_active_icon));
         stop_btn->setIcon(QIcon(stop_active_icon));
-        mainWidget->clearTable();
         start_btn->setEnabled(false);
         stop_btn->setEnabled(true);
-        sniffer->startCapture();
+
     });
     connect(stop_btn,&QAction::triggered,this,[=](){
         qDebug( "click stop button");
@@ -75,7 +83,7 @@ MainWindow::MainWindow() {
 
     });
 
-    auto filter_line = new QLineEdit();
+    filter_line = new QLineEdit();
     filter_line->setPlaceholderText("please write filter regular");
     filter_line->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Expanding);
     toolBar->addWidget(filter_line);
