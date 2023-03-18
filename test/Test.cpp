@@ -10,6 +10,9 @@
 #include <arpa/inet.h>
 #include <errno.h>
 #include <string.h>
+#include <netinet/if_ether.h>
+#include <netinet/ip.h>
+#include <netinet/tcp.h>
 
 //链路层数据包格式 以太网雷系
 typedef struct {
@@ -127,22 +130,22 @@ int test(int argc, char **argv)
     }
 
     int flag=1;
-    while(flag){
-        //input the design filter
-        printf("Input packet Filter: ");
-        char filterString[1024];
-        scanf("%s",filterString);
-
-        if(pcap_compile(phandle,&fcode,filterString,0,ipmask)==-1)
-            fprintf(stderr,"pcap_compile: %s,please input again....\n",pcap_geterr(phandle));
-        else
-            flag=0;
-    }
-
-    if(pcap_setfilter(phandle,&fcode)==-1){
-        fprintf(stderr,"pcap_setfilter: %s\n",pcap_geterr(phandle));
-        return 1;
-    }
+//    while(flag){
+//        //input the design filter
+//        printf("Input packet Filter: ");
+//        char filterString[1024];
+//        scanf("%s",filterString);
+//
+//        if(pcap_compile(phandle,&fcode,filterString,0,ipmask)==-1)
+//            fprintf(stderr,"pcap_compile: %s,please input again....\n",pcap_geterr(phandle));
+//        else
+//            flag=0;
+//    }
+//
+//    if(pcap_setfilter(phandle,&fcode)==-1){
+//        fprintf(stderr,"pcap_setfilter: %s\n",pcap_geterr(phandle));
+//        return 1;
+//    }
 
     if((datalink=pcap_datalink(phandle))==-1){
         fprintf(stderr,"pcap_datalink: %s\n",pcap_geterr(phandle));
@@ -360,7 +363,11 @@ TEST(TestLibpcap, pcapFilter){
     }
 
     struct bpf_program filter;
-    pcap_compile(network_interface,&filter,"src host baidu.com",1,0);
+    if (pcap_compile(network_interface,&filter,"dst host 159.226.8.7",1,PCAP_NETMASK_UNKNOWN) == -1){
+        pcap_perror(network_interface,ebuf);
+        std::cout << "compile error: " << ebuf;
+        exit(1);
+    }
     pcap_setfilter(network_interface,&filter);
 
     int id = 0;
@@ -377,4 +384,12 @@ TEST(TestLibpcap, pcapFilter){
     pcap_loop(network_interface,-1,packetHandler,(u_char*)&id);
 
     pcap_close(network_interface);
+}
+
+TEST(test,test){
+    u_char c1 = 0x01;
+    u_char c2 = 0xbb;
+    std::cout << (c1 << 8) + c2 << std::endl;
+    std::cout << (80 << 8) + 16 << std::endl;
+    std::cout << ((unsigned int)c1 << 8) + (unsigned  int)c2 << std::endl;
 }

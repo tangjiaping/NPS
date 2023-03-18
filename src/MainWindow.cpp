@@ -33,27 +33,31 @@ MainWindow::MainWindow() {
 
     auto menuBar = new QMenuBar();
     menuBar->addAction("file");
-    setMenuBar(menuBar);
+//    setMenuBar(menuBar);
 
     auto toolBar = new QToolBar();
     auto start_btn = new QAction(QIcon(start_active_icon),"start");
     auto stop_btn = new QAction(QIcon(stop_no_active_icon),"stop");
     toolBar->addAction(start_btn);
     toolBar->addAction(stop_btn);
-
+    stop_btn->setEnabled(false);
 
     connect(start_btn,&QAction::triggered,this,[=](){
         qDebug() << "click start button";
         start_btn->setIcon(QIcon(start_no_active_icon));
         stop_btn->setIcon(QIcon(stop_active_icon));
+        mainWidget->clearTable();
+        start_btn->setEnabled(false);
+        stop_btn->setEnabled(true);
         sniffer->startCapture();
     });
     connect(stop_btn,&QAction::triggered,this,[=](){
         qDebug( "click stop button");
         start_btn->setIcon(QIcon(start_active_icon));
         stop_btn->setIcon(QIcon(stop_no_active_icon));
+        stop_btn->setEnabled(false);
+        start_btn->setEnabled(true);
         sniffer->closeCaptrue();
-
     });
 
 
@@ -80,7 +84,7 @@ MainWindow::MainWindow() {
     addToolBar(Qt::TopToolBarArea,toolBar);
 
 
-    auto mainWidget = new MainWidget(dataPkg);
+    mainWidget = new MainWidget(dataPkg);
     setCentralWidget(mainWidget);
 
 

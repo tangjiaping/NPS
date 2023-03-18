@@ -15,8 +15,13 @@ void DataPkg::parserDevice(pcap_if *interface_list) {
     }
 }
 
-void DataPkg::addPacket(const u_char *from, int len, timeval ts) {
+void DataPkg::addPacket(int id,const u_char *from, int len, timeval ts) {
     auto* data = (u_char*)new u_char[len];
     std::memcpy(data,from,len);
-    packets.push_back(Packet(data,len,ts));
+    mtx.lock();
+    Packet packet(data,len,ts,"");
+    packet.id = id;
+    packets.push_back(packet);
+
+    mtx.unlock();
 }

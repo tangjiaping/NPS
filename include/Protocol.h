@@ -25,29 +25,77 @@ struct Ethernet{
 };
 
 struct IP{
-    int version:4;
-    int header_length:4;
+    u_char header_length:4;
+    u_char version:4;
+
     u_char service;
-    int total_length:16;
+    u_char total_length[2];
 
-    int identify:16;
-    int flags:3;
-    int seg_offset:13;
+    u_char identify[2];
 
-    int ttl:8;
-    int protocol:8; // {1:ICMP; 2:IGMP; 6:TCP; 17:UDP}
-    int check_sum:16;
+    u_char flags_segOffset[2];
+
+
+    u_char ttl;
+    u_char protocol; // {1:ICMP; 2:IGMP; 6:TCP; 17:UDP}
+
+    u_char check_sum[2];
 
     u_char srcIp[4];
     u_char desIp[4];
 };
 
+struct IPv6{
+
+    u_char version_trafficClass_flowLabel[4];
+
+    u_char playload[2];
+    u_char next_header;
+    u_char ttl;
+
+    u_char srcIp[16];
+    u_char desIp[16];
+};
+
+
+struct TCP{
+    u_char srcPort[2];
+    u_char desPort[2];
+    u_char seq[4];
+    u_char ack[4];
+
+    u_char header_len:4;
+    u_char reserved:3;
+    u_char NS:1;
+
+    u_char CWR:1;
+    u_char ECE:1;
+    u_char URG:1;
+    u_char ACK:1;
+    u_char PSH:1;
+    u_char RST:1;
+    u_char SYN:1;
+    u_char FIN:1;
+
+    u_char window_size[2];
+    u_char checksum[2];
+    u_char ugenr_pointer[2];
+
+
+};
+
+struct UDP{
+    u_char srcPort[2];
+    u_char desPort[2];
+    u_char total_len[2];
+    u_char check_sum[2];
+};
 struct ARP{
-    u_char hardwareAddrType[2];
-    u_char protocolType[2];
-    u_char hardwareAddrLength[1];
-    u_char protocolAddrLength[1];
-    u_char opCode[1];
+    unsigned int hardwareAddrType:16;
+    unsigned int protocolType:16;
+    unsigned int hardwareAddrLength:8;
+    unsigned int protocolAddrLength:8;
+    unsigned int opCode:16;
     u_char srcMac[4];
     u_char srcIp[4];
     u_char desMac[4];

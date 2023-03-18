@@ -9,6 +9,8 @@
 #include <QMainWindow>
 #include "DataPkg.h"
 
+class MainWidget;
+
 class Sniffer;
 
 class MainWindow : public QMainWindow{
@@ -17,7 +19,7 @@ public:
     MainWindow();
     DataPkg* dataPkg;
     Sniffer* sniffer;
-
+    MainWidget* mainWidget;
     signals:
         void loadPacket();
 

@@ -17,9 +17,11 @@
 
 #include <iostream>
 #include <sstream>
+#include <QTextEdit>
 #include "Protocol.h"
 
 #include "DataPkg.h"
+#include "Analysiser.h"
 
 class MainWidget : public QWidget{
 
@@ -29,11 +31,23 @@ public:
 
     QTableWidget* table;
     QTreeWidget* tree;
+    QTextEdit* button;
+
     int idx = 0;
     DataPkg* dataPkg;
+private:
+    void showEthernet(const EthernetStr& ethernetStr);
+    void showIpv4(const IPStr& ipStr);
+    void showIpv6(const IPv6Str& iPv6Str);
+    void showTCP(const TCPStr& tcpStr);
+    void showUDP(const UDPStr& udpStr);
+public:
+    void update(int selected_row);
+    void clearTable();
 
 public slots:
         void displayPacket();
+
 };
 
 

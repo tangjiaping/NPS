@@ -9,14 +9,22 @@
 #include <vector>
 #include <string>
 #include <pcap.h>
+#include <mutex>
 
 
 struct Packet{
     u_char* data = nullptr;
     int len = 0;
     struct timeval ts;
+    int id = 0;
+    std::string interface;
+    Packet(u_char* data) : data(data){ }
 
-    Packet(u_char* data_,int len_,struct timeval ts_):data(data_),len(len_),ts(ts_){
+    Packet(u_char* data_,int len_,struct timeval ts_,const std::string& interface)
+            :data(data_),
+            len(len_),
+            ts(ts_),
+            interface(interface){
 
     }
 };
@@ -27,9 +35,18 @@ public:
 
     std::vector<Packet> packets;
 
+    std::mutex mtx;
+
     void parserDevice(pcap_if* interface_list);
 
-    void addPacket(const u_char* data,int len,timeval ts);
+    void addPacket(int id,const u_char* data,int len,timeval ts);
+
+    Packet getPacket(int idx){
+        if (idx >= packets.size()){
+          return Packet(nullptr);
+        }
+        return packets[idx];
+    }
 };
 
 
